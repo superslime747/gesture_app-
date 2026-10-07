@@ -86,11 +86,12 @@ class MouseView(ctk.CTkFrame):
             row=5, column=0, padx=20, pady=(4, 8), sticky="w")
 
         hints = [
-            ("☝  Указательный", "движение курсора"),
-            ("🤏  Щипок", "левый клик"),
+            ("☝  Указательный", "движение"),
+            ("👌  OK", "левый клик"),
             ("✌  Два пальца", "правый клик"),
             ("✊  Кулак", "захват (drag)"),
             ("✋  Открытая ладонь", "пауза"),
+            ("👍  Большой палец", "скролл ↑/↓"),
         ]
         for i, (gest, action) in enumerate(hints):
             row_frame = ctk.CTkFrame(right, fg_color="transparent")
