@@ -1,0 +1,31 @@
+# Виртуальное окружение
+venv/
+env/
+.venv/
+
+# Кэш Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Локальные настройки
+settings.json
+
+# Данные и модели (у каждого свои)
+data/*.csv
+models/*.pkl
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# ОС
+.DS_Store
+Thumbs.db
+
+# Сборки PyInstaller
+build/
+dist/
+*.spec
