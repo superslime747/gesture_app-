@@ -4,14 +4,13 @@
 с переключателем режимов.
 """
 import customtkinter as ctk
-from PIL import Image
-import numpy as np
 
 from settings import load_settings, save_settings
 from camera import CameraStream
 from classifier import GestureClassifier
 from ui.game_view import GameView
 from ui.mouse_view import MouseView
+from ui.face_view import FaceView
 from ui.settings_view import SettingsView
 
 
@@ -26,8 +25,8 @@ class MainWindow(ctk.CTk):
         self._apply_theme()
 
         self.title("Gesture App — распознавание жестов")
-        self.geometry("1100x720")
-        self.minsize(900, 600)
+        self.geometry("1200x720")
+        self.minsize(1000, 600)
 
         # Общие ресурсы
         self.camera = None
@@ -37,15 +36,15 @@ class MainWindow(ctk.CTk):
         self.current_view = None
 
         # Сетка
-        self.grid_rowconfigure(0, weight=0)   # верхняя панель
-        self.grid_rowconfigure(1, weight=1)   # центр
-        self.grid_rowconfigure(2, weight=0)   # нижняя панель
+        self.grid_rowconfigure(0, weight=0)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=0)
         self.grid_columnconfigure(0, weight=1)
 
         # Верхняя панель
         self._build_topbar()
 
-        # Центральная область — контейнер
+        # Центральная область
         self.center_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.center_frame.grid(row=1, column=0, sticky="nsew", padx=16, pady=8)
         self.center_frame.grid_rowconfigure(0, weight=1)
@@ -54,10 +53,9 @@ class MainWindow(ctk.CTk):
         # Нижняя панель
         self._build_bottombar()
 
-        # Показываем экран выбора режима
+        # Стартовый экран
         self.show_mode_selection()
 
-        # Закрытие
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
     # ------------------------------------------------------------------
@@ -94,7 +92,7 @@ class MainWindow(ctk.CTk):
     def _build_bottombar(self):
         self.bottombar = ctk.CTkFrame(self, height=60, corner_radius=0)
         self.bottombar.grid(row=2, column=0, sticky="ew")
-        self.bottombar.grid_columnconfigure((0, 1, 2), weight=1)
+        self.bottombar.grid_columnconfigure((0, 1, 2, 3), weight=1)
 
         self.mode_btn_game = ctk.CTkButton(
             self.bottombar, text="🎮 Игра КНБ", height=40,
@@ -108,17 +106,22 @@ class MainWindow(ctk.CTk):
         )
         self.mode_btn_mouse.grid(row=0, column=1, padx=8, pady=10)
 
+        self.mode_btn_face = ctk.CTkButton(
+            self.bottombar, text="😀 Лицо и эмоции", height=40,
+            command=self.show_face
+        )
+        self.mode_btn_face.grid(row=0, column=2, padx=8, pady=10)
+
         self.mode_btn_home = ctk.CTkButton(
             self.bottombar, text="🏠 Главное меню", height=40,
             command=self.show_mode_selection
         )
-        self.mode_btn_home.grid(row=0, column=2, padx=8, pady=10)
+        self.mode_btn_home.grid(row=0, column=3, padx=8, pady=10)
 
     # ------------------------------------------------------------------
     # Управление видами
     # ------------------------------------------------------------------
     def _clear_center(self):
-        """Удаляет текущий вид из центральной области."""
         if self.current_view is not None:
             try:
                 self.current_view.on_hide()
@@ -133,33 +136,41 @@ class MainWindow(ctk.CTk):
         view.grid(row=0, column=0, sticky="nsew")
 
     def show_mode_selection(self):
-        """Экран выбора режима — две большие кнопки."""
+        """Экран выбора режима — три большие кнопки."""
         self._clear_center()
         frame = ctk.CTkFrame(self.center_frame, fg_color="transparent")
         frame.grid_rowconfigure((0, 1, 2), weight=1)
-        frame.grid_columnconfigure((0, 1), weight=1)
+        frame.grid_columnconfigure((0, 1, 2), weight=1)
 
         title = ctk.CTkLabel(
             frame, text="Выбери режим",
             font=ctk.CTkFont(size=28, weight="bold")
         )
-        title.grid(row=0, column=0, columnspan=2, pady=(20, 10))
+        title.grid(row=0, column=0, columnspan=3, pady=(20, 10))
 
         btn_game = ctk.CTkButton(
             frame, text="🎮\n\nИгра\nКамень-Ножницы-Бумага",
-            font=ctk.CTkFont(size=20, weight="bold"),
-            height=200, width=280, corner_radius=20,
+            font=ctk.CTkFont(size=18, weight="bold"),
+            height=200, width=260, corner_radius=20,
             command=self.show_game
         )
-        btn_game.grid(row=1, column=0, padx=20, pady=20)
+        btn_game.grid(row=1, column=0, padx=15, pady=20)
 
         btn_mouse = ctk.CTkButton(
             frame, text="🖱\n\nВиртуальная\nмышь",
-            font=ctk.CTkFont(size=20, weight="bold"),
-            height=200, width=280, corner_radius=20,
+            font=ctk.CTkFont(size=18, weight="bold"),
+            height=200, width=260, corner_radius=20,
             command=self.show_mouse
         )
-        btn_mouse.grid(row=1, column=1, padx=20, pady=20)
+        btn_mouse.grid(row=1, column=1, padx=15, pady=20)
+
+        btn_face = ctk.CTkButton(
+            frame, text="😀\n\nЛицо\nи эмоции",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            height=200, width=260, corner_radius=20,
+            command=self.show_face
+        )
+        btn_face.grid(row=1, column=2, padx=15, pady=20)
 
         self.current_view = frame
 
@@ -175,6 +186,12 @@ class MainWindow(ctk.CTk):
         view = MouseView(self.center_frame, self.camera, self.classifier, self)
         self._set_view(view)
 
+    def show_face(self):
+        if not self._ensure_camera():
+            return
+        view = FaceView(self.center_frame, self.camera, self.classifier, self)
+        self._set_view(view)
+
     def show_settings(self):
         view = SettingsView(self.center_frame, self.settings, self)
         self._set_view(view)
@@ -183,7 +200,6 @@ class MainWindow(ctk.CTk):
     # Камера
     # ------------------------------------------------------------------
     def _ensure_camera(self) -> bool:
-        """Запускает камеру, если ещё не запущена. Возвращает True при успехе."""
         if self.camera is not None and self.camera.running:
             return True
         try:
@@ -198,14 +214,12 @@ class MainWindow(ctk.CTk):
             return False
 
     def restart_camera(self):
-        """Перезапускает камеру (после смены индекса в настройках)."""
         if self.camera is not None:
             self.camera.stop()
             self.camera = None
         self._ensure_camera()
 
     def _show_error(self, message: str):
-        """Простое модальное окно с ошибкой."""
         top = ctk.CTkToplevel(self)
         top.title("Ошибка")
         top.geometry("400x150")
@@ -223,26 +237,21 @@ class MainWindow(ctk.CTk):
     # Применение настроек
     # ------------------------------------------------------------------
     def apply_settings(self, new_settings: dict):
-        """Применяет новые настройки, сохраняет и обновляет UI."""
         old_camera = self.settings.get("camera_index")
         self.settings.update(new_settings)
         save_settings(self.settings)
 
         self._apply_theme()
 
-        # Если сменилась камера — перезапускаем
         if old_camera != self.settings.get("camera_index"):
             self.restart_camera()
 
-        # Обновляем текущий вид, если у него есть метод apply_settings
         if self.current_view is not None and hasattr(self.current_view, "apply_settings"):
             try:
                 self.current_view.apply_settings(self.settings)
             except Exception:
                 pass
 
-    # ------------------------------------------------------------------
-    # Закрытие
     # ------------------------------------------------------------------
     def _on_close(self):
         if self.camera is not None:

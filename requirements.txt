@@ -7,3 +7,5 @@ pyautogui==0.9.54
 scikit-learn==1.5.2
 joblib==1.4.2
 pygame==2.6.1
+deepface==0.0.93
+tf-keras==2.16.0
